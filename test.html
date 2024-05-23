@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>イライラ棒ゲーム</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        let startX = 50, startY = 50; // スタート位置
+        let endX = 550, endY = 400;   // ゴール位置
+        let gameOver = false;
+        let gameClear = false;
+        let gameStarted = false;      // ゲーム開始フラグ
+
+        let bullets = [];
+        let enemies = [];
+        let bulletInterval = 30;
+        let bulletTimer = 0;
+
+        function setup() {
+            createCanvas(600, 450);
+            noCursor();
+            enemies.push(new Enemy(300, 200, 0)); // 固定敵
+            enemies.push(new Enemy(400, 300, 1)); // 移動する敵
+        }
+
+        function draw() {
+            background(255);
+            drawMaze();
+
+            if (!gameStarted) {
+                // スタート地点を踏むまで待機
+                fill(128, 0, 128); // 自機の色を紫に変更
+                ellipse(mouseX, mouseY, 10, 10);
+                if (dist(mouseX, mouseY, startX, startY) < 15) {
+                    gameStarted = true;
+                }
+            } else {
+                drawEnemies();
+
+                if (mouseIsPressed) {
+                    // マウスをクリックしている間のみカーソルが動く
+                    fill(128, 0, 128); // 自機の色を紫に変更
+                    ellipse(mouseX, mouseY, 10, 10);
+                } else {
+                    // マウスをクリックしていない場合は、最後の位置を保持
+                    fill(128, 0, 128); // 自機の色を紫に変更
+                    ellipse(pmouseX, pmouseY, 10, 10);
+                }
+
+                if (!gameOver && !gameClear) {
+                    checkCollision();
+                    checkGoal();
+                }
+
+                if (gameOver) {
+                    textSize(32);
+                    fill(255, 0, 0);
+                    text("Game Over", width / 2 - 80, height / 2);
+                    noLoop(); // ゲームオーバーで停止
+                }
+
+                if (gameClear) {
+                    textSize(32);
+                    fill(0, 255, 0);
+                    text("Game Clear!", width / 2 - 80, height / 2);
+                    noLoop(); // ゲームクリアで停止
+                }
+            }
+        }
+
+        function drawMaze() {
+            // スタート地点
+            fill(0, 255, 0);
+            rect(startX - 15, startY - 15, 30, 30);
+
+            // ゴール地点
+            fill(0, 0, 255);
+            rect(endX - 15, endY - 15, 30, 30);
+
+            // 壁の描画
+            stroke(0);
+            strokeWeight(5);
+            fill(0);
+
+            // 迷路の壁（添付画像に基づく）
+            line(0, 100, 550, 100);  // 上の壁
+            line(50, 250, 600, 250); // 中央の壁
+            line(0, 400, 550, 400);  // 下の壁
+            line(0, 0, 0, 450);      // 左の壁
+            line(600, 0, 600, 450);  // 右の壁
+        }
+
+        function drawEnemies() {
+            bulletTimer++;
+            for (let e of enemies) {
+                e.update();
+                e.display();
+                if (bulletTimer >= bulletInterval) {
+                    e.shoot(bullets, mouseX, mouseY);
+                }
+            }
+            if (bulletTimer >= bulletInterval) {
+                bulletTimer = 0;
+            }
+
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.update();
+                b.display();
+                if (b.isOffScreen()) {
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+
+        function checkCollision() {
+            // 壁との当たり判定
+            if ((mouseX > -5 && mouseX < 555 && mouseY > 95 && mouseY < 105) || // 上の壁
+                (mouseX > 45 && mouseX < 605 && mouseY > 245 && mouseY < 255) || // 中央の壁
+                (mouseX > -5 && mouseX < 555 && mouseY > 395 && mouseY < 405) || // 下の壁
+                (mouseX < 5) || // 左の壁
+                (mouseX > 595)) { // 右の壁
+                gameOver = true;
+            }
+
+            // 玉との当たり判定
+            for (let b of bullets) {
+                if (dist(mouseX, mouseY, b.x, b.y) < 10) {
+                    gameOver = true;
+                }
+            }
+        }
+
+        function checkGoal() {
+            // ゴール地点に到達したか確認
+            if (dist(mouseX, mouseY, endX, endY) < 15) {
+                gameClear = true;
+            }
+        }
+
+        class Bullet {
+            constructor(x, y, targetX, targetY) {
+                this.x = x;
+                this.y = y;
+                let angle = atan2(targetY - y, targetX - x);
+                let speed = 5; // 玉の速度
+                this.speedX = cos(angle) * speed;
+                this.speedY = sin(angle) * speed;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+            }
+
+            display() {
+                fill(0);
+                ellipse(this.x, this.y, 10, 10);
+            }
+
+            isOffScreen() {
+                return this.x < 0 || this.x > width || this.y < 0 || this.y > height;
+            }
+        }
+
+        class Enemy {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                if (type == 1) {
+                    this.speedX = 2;
+                    this.speedY = 2;
+                }
+            }
+
+            update() {
+                if (this.type == 1) {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    if (this.x > width - 30 || this.x < 30) {
+                        this.speedX *= -1;
+                    }
+                    if (this.y > height - 30 || this.y < 30) {
+                        this.speedY *= -1;
+                    }
+                }
+            }
+
+            display() {
+                fill(255, 0, 0);
+                rect(this.x - 15, this.y - 15, 30, 30);
+            }
+
+            shoot(bullets, targetX, targetY) {
+                bullets.push(new Bullet(this.x, this.y, targetX, targetY));
+            }
+        }
+    </script>
+</body>
+
+</html>
