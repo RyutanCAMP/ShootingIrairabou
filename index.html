@@ -39,6 +39,8 @@
             let gameStarted = false;      // ゲーム開始フラグ
             let gameOverTime = 0;         // ゲームオーバー時のタイムスタンプ
             let gameClearTime = 0;        // ゲームクリア時のタイムスタンプ
+            let gameStartTime = 0;        // ゲーム開始時のタイムスタンプ
+            let clearTime = 0;            // クリアまでの時間
 
             let bullets = [];
             let enemies = [];
@@ -68,6 +70,7 @@
                     ellipse(mouseX, mouseY, 10, 10);
                     if (dist(mouseX, mouseY, startX, startY) < 15) {
                         gameStarted = true;
+                        gameStartTime = millis(); // ゲーム開始時のタイムスタンプを取得
                     }
                 } else {
                     drawEnemies();
@@ -101,13 +104,14 @@
                     drawPlayerParticles();
 
                     if (gameClear) {
+
+                        createFireworks();
+                        background(0);
+                        drawFireworks();
+                        displayCongratulations();
+                        displayClearTime();
                         if (millis() - gameClearTime > 3000) { // 3秒後にリスタート
                             restartGame();
-                        } else {
-                            createFireworks();
-                            background(0);
-                            drawFireworks();
-                            displayCongratulations();
                         }
                     }
                 }
@@ -188,6 +192,7 @@
                     if (!gameClear) {
                         gameClear = true;
                         gameClearTime = millis(); // ゲームクリア時のタイムスタンプを取得
+                        clearTime = (gameClearTime - gameStartTime) / 1000; // クリアまでの時間を計算
                     }
                 }
             }
@@ -220,6 +225,7 @@
                 fireworks = [];
                 playerParticles = [];
                 congratulationsDisplayed = false;
+                clearTime = 0;
                 setup(); // ゲームのセットアップを再度実行
                 loop(); // ゲームループを再開
             }
@@ -229,6 +235,21 @@
                 enemies.push(new Enemy(300, 200, 0)); // 固定敵
                 enemies.push(new Enemy(400, 300, 1)); // 移動する敵
                 colorMode(RGB);
+            }
+
+            function displayCongratulations() {
+                textSize(48);
+                fill(255, 215, 0);
+                textAlign(CENTER);
+                console.log(clearTime);
+                text("おめでとう!", width / 2, height / 2);
+            }
+
+            function displayClearTime() {
+                textSize(24);
+                fill(255, 215, 0);
+                textAlign(CENTER);
+                text(`クリアタイム: ${clearTime.toFixed(2)} 秒`, width / 2, height / 2 + 50);
             }
 
             class Bullet {
@@ -304,13 +325,6 @@
                         fireworks.splice(i, 1);
                     }
                 }
-            }
-
-            function displayCongratulations() {
-                textSize(48);
-                fill(255, 215, 0);
-                textAlign(CENTER);
-                text("おめでとう!", width / 2, height / 2);
             }
 
             class Firework {
