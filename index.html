@@ -37,6 +37,8 @@
             let gameOver = false;
             let gameClear = false;
             let gameStarted = false;      // ゲーム開始フラグ
+            let gameOverTime = 0;         // ゲームオーバー時のタイムスタンプ
+            let gameClearTime = 0;        // ゲームクリア時のタイムスタンプ
 
             let bullets = [];
             let enemies = [];
@@ -52,59 +54,62 @@
                 noCursor();
                 enemies.push(new Enemy(300, 200, 0)); // 固定敵
                 enemies.push(new Enemy(400, 300, 1)); // 移動する敵
+                resetGame();
             }
 
             function draw() {
-                if (!gameClear) {
-                    background(255);
-                    drawMaze();
+                background(255);
+                drawMaze();
 
-                    if (!gameStarted) {
-                        // スタート地点を踏むまで待機
+                if (!gameStarted) {
+                    // スタート地点を踏むまで待機
+                    noStroke();
+                    fill(128, 0, 128); // 自機の色を紫に変更
+                    ellipse(mouseX, mouseY, 10, 10);
+                    if (dist(mouseX, mouseY, startX, startY) < 15) {
+                        gameStarted = true;
+                    }
+                } else {
+                    drawEnemies();
+
+                    if (mouseIsPressed) {
+                        // マウスをクリックしている間のみカーソルが動く
                         noStroke();
                         fill(128, 0, 128); // 自機の色を紫に変更
                         ellipse(mouseX, mouseY, 10, 10);
-                        if (dist(mouseX, mouseY, startX, startY) < 15) {
-                            gameStarted = true;
-                        }
                     } else {
-                        drawEnemies();
+                        // マウスをクリックしていない場合は、最後の位置を保持
+                        noStroke();
+                        fill(128, 0, 128); // 自機の色を紫に変更
+                        ellipse(pmouseX, pmouseY, 10, 10);
+                    }
 
-                        if (mouseIsPressed) {
-                            // マウスをクリックしている間のみカーソルが動く
-                            noStroke();
-                            fill(128, 0, 128); // 自機の色を紫に変更
-                            ellipse(mouseX, mouseY, 10, 10);
-                        } else {
-                            // マウスをクリックしていない場合は、最後の位置を保持
-                            noStroke();
-                            fill(128, 0, 128); // 自機の色を紫に変更
-                            ellipse(pmouseX, pmouseY, 10, 10);
-                        }
+                    if (!gameOver && !gameClear) {
+                        checkCollision();
+                        checkGoal();
+                    }
 
-                        if (!gameOver && !gameClear) {
-                            checkCollision();
-                            checkGoal();
-                        }
-
-                        if (gameOver) {
-                            textSize(32);
-                            fill(255, 0, 0);
-                            text("Game Over", width / 2 - 80, height / 2);
-                            //追加//////////
-                            createPlayerExplosion(mouseX, mouseY);
-                            //noLoop(); // ゲームオーバーで停止
-                        }
-                        /////追加////////
-                        drawPlayerParticles();
-                        if (gameClear) {
-                            createFireworks();
+                    if (gameOver) {
+                        textSize(32);
+                        fill(255, 0, 0);
+                        text("Game Over", width / 2 - 80, height / 2);
+                        createPlayerExplosion(mouseX, mouseY);
+                        if (millis() - gameOverTime > 3000) { // 3秒後にリスタート
+                            restartGame();
                         }
                     }
-                } else {
-                    background(0);
-                    drawFireworks();
-                    displayCongratulations();
+                    drawPlayerParticles();
+
+                    if (gameClear) {
+                        if (millis() - gameClearTime > 3000) { // 3秒後にリスタート
+                            restartGame();
+                        } else {
+                            createFireworks();
+                            background(0);
+                            drawFireworks();
+                            displayCongratulations();
+                        }
+                    }
                 }
             }
 
@@ -160,13 +165,19 @@
                     (mouseX > -5 && mouseX < 535 && mouseY > 395 && mouseY < 405) || // 下の壁
                     (mouseX < 5) || // 左の壁
                     (mouseX > 595)) { // 右の壁
-                    gameOver = true;
+                    if (!gameOver) {
+                        gameOver = true;
+                        gameOverTime = millis(); // ゲームオーバー時のタイムスタンプを取得
+                    }
                 }
 
                 // 玉との当たり判定
                 for (let b of bullets) {
                     if (dist(mouseX, mouseY, b.x, b.y) < 10) {
-                        gameOver = true;
+                        if (!gameOver) {
+                            gameOver = true;
+                            gameOverTime = millis(); // ゲームオーバー時のタイムスタンプを取得
+                        }
                     }
                 }
             }
@@ -174,7 +185,10 @@
             function checkGoal() {
                 // ゴール地点に到達したか確認
                 if (dist(mouseX, mouseY, endX, endY) < 15) {
-                    gameClear = true;
+                    if (!gameClear) {
+                        gameClear = true;
+                        gameClearTime = millis(); // ゲームクリア時のタイムスタンプを取得
+                    }
                 }
             }
 
@@ -194,6 +208,27 @@
                         playerParticles.splice(i, 1);
                     }
                 }
+            }
+
+            function restartGame() {
+                gameOver = false;
+                gameClear = false;
+                gameStarted = false;
+                bullets = [];
+                enemies = [];
+                bulletTimer = 0;
+                fireworks = [];
+                playerParticles = [];
+                congratulationsDisplayed = false;
+                setup(); // ゲームのセットアップを再度実行
+                loop(); // ゲームループを再開
+            }
+
+            function resetGame() {
+                enemies = [];
+                enemies.push(new Enemy(300, 200, 0)); // 固定敵
+                enemies.push(new Enemy(400, 300, 1)); // 移動する敵
+                colorMode(RGB);
             }
 
             class Bullet {
