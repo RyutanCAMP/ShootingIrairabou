@@ -23,6 +23,7 @@
         #instructions {
             margin-top: 20px;
             font-size: 16px;
+            /* 説明の文字を小さく */
             text-align: center;
         }
     </style>
@@ -103,8 +104,6 @@
                     drawPlayerParticles();
 
                     if (gameClear) {
-
-                        createFireworks();
                         background(0);
                         drawFireworks();
                         displayCongratulations();
@@ -192,6 +191,8 @@
                         gameClear = true;
                         gameClearTime = millis(); // ゲームクリア時のタイムスタンプを取得
                         clearTime = (gameClearTime - gameStartTime) / 1000; // クリアまでの時間を計算
+                        displayRank(); // ランクを表示して花火の数を設定
+                        createFireworks(); // 花火を生成
                     }
                 }
             }
@@ -240,7 +241,6 @@
                 textSize(48);
                 fill(255, 215, 0);
                 textAlign(CENTER);
-                console.log(clearTime);
                 text("おめでとう!", width / 2, height / 2);
             }
 
@@ -256,20 +256,28 @@
                 let rank = '';
                 if (clearTime <= 1) {
                     rank = 'SSS';
+                    fireworkCount = 20;
                 } else if (clearTime <= 2) {
                     rank = 'SS';
+                    fireworkCount = 17;
                 } else if (clearTime <= 3) {
                     rank = 'S';
+                    fireworkCount = 15;
                 } else if (clearTime <= 4) {
                     rank = 'A';
+                    fireworkCount = 10;
                 } else if (clearTime <= 5) {
                     rank = 'B';
+                    fireworkCount = 7;
                 } else if (clearTime <= 6) {
                     rank = 'C';
+                    fireworkCount = 5;
                 } else if (clearTime <= 7) {
                     rank = 'D';
+                    fireworkCount = 3;
                 } else {
                     rank = 'E';
+                    fireworkCount = 1;
                 }
 
                 textSize(24);
@@ -338,6 +346,7 @@
             }
 
             function createFireworks() {
+                fireworks = []; // 花火リストを初期化
                 for (let i = 0; i < fireworkCount; i++) {
                     fireworks.push(new Firework());
                 }
