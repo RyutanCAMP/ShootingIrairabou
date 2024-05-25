@@ -23,7 +23,6 @@
         #instructions {
             margin-top: 20px;
             font-size: 16px;
-            /* 説明の文字を小さく */
             text-align: center;
         }
     </style>
@@ -250,6 +249,33 @@
                 fill(255, 215, 0);
                 textAlign(CENTER);
                 text(`クリアタイム: ${clearTime.toFixed(2)} 秒`, width / 2, height / 2 + 50);
+                displayRank(); // ランクを表示
+            }
+
+            function displayRank() {
+                let rank = '';
+                if (clearTime <= 1) {
+                    rank = 'SSS';
+                } else if (clearTime <= 2) {
+                    rank = 'SS';
+                } else if (clearTime <= 3) {
+                    rank = 'S';
+                } else if (clearTime <= 4) {
+                    rank = 'A';
+                } else if (clearTime <= 5) {
+                    rank = 'B';
+                } else if (clearTime <= 6) {
+                    rank = 'C';
+                } else if (clearTime <= 7) {
+                    rank = 'D';
+                } else {
+                    rank = 'E';
+                }
+
+                textSize(24);
+                fill(255, 215, 0);
+                textAlign(CENTER);
+                text(`ランク: ${rank}`, width / 2, height / 2 + 80);
             }
 
             class Bullet {
